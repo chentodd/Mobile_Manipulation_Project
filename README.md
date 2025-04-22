@@ -81,8 +81,3 @@ A very naive joint protection is implemented in `test_joint_limits` in `main.py`
     - `overshoot`: run the task with a poorly tuned controller
     - `newtask`: run the task with a tuned controller, and turn on/off the protection to see its effect
 
-<video src="./results/newTask/new_task_no_protection_animation.mp4" controls></video>
-
-* protection
-
-<video src="./results/newTask/new_task_protection_animation.mp4" controls></video>
