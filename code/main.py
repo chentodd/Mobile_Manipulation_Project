@@ -239,7 +239,8 @@ if __name__ == '__main__':
     full_trajectory_filename = "./full_trajectory.csv"
     end_effector_error_filename = "./end_effector_error.csv"
 
-    with open(f"./log-{datetime.datetime.now()}.log", 'w') as log:
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with open(f"./log-{timestamp}.log", 'w') as log:
         sys.stdout = log
 
         # Print settings
