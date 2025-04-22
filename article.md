@@ -131,7 +131,7 @@ V_b & =
 \begin{bmatrix}
 w_{bz} \\ 
 v_{bx} \\ 
-y_{by}
+v_{by}
 \end{bmatrix} & =
 \begin{bmatrix}
 1 & 0 & 0 \\
