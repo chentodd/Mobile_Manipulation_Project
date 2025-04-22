@@ -192,8 +192,8 @@ v =
 -\sin{\beta_i} & \cos{\beta_i}
 \end{bmatrix}
 \begin{bmatrix}
-v_{x} \\
-v_{y}
+v_{wheelx} \\
+v_{wheely}
 \end{bmatrix}
 \end{aligned}
 $$
@@ -345,13 +345,13 @@ $$
 v_{bx} & = \hat{v}_{bx} = \frac{(F\Delta{\theta})_x}{\Delta{t}}, 
 v_{by} = \hat{v}_{by} =  \frac{(F\Delta{\theta})_y}{\Delta{t}}
 w_{bz} = \hat{w}_{bz} =  \frac{(F\Delta{\theta})_z}{\Delta{t}} \\
-w_b & = 0, \Delta{q_b} = 
+w_{bz} & = 0, \Delta{q_b} = 
 \begin{bmatrix}
 0 \\
 \hat{v}_{bx} \\
 \hat{v}_{by}
 \end{bmatrix} \\
-w_b & \not ={0}, \Delta{q_b} = 
+w_{bz} & \not ={0}, \Delta{q_b} = 
 \begin{bmatrix}
 \hat{w}_{bz} \\
 \frac{v_{bx}\sin{\hat{w}_{bz}} + v_{by}(\cos{\hat{w}_{bz}} - 1)}{\hat{w}_{bz}} \\
