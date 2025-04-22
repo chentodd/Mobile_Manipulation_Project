@@ -189,7 +189,7 @@ $$
 v = 
 \begin{bmatrix}
 \cos{\beta_i} & \sin{\beta_i} \\
--\cos{\beta_i} & \sin{\beta_i}
+-\sin{\beta_i} & \cos{\beta_i}
 \end{bmatrix}
 \begin{bmatrix}
 v_{x} \\
@@ -221,7 +221,7 @@ u_i & = h_i(\phi)\dot{q} \\
 \end{bmatrix}
 \begin{bmatrix}
 \cos{\beta_i} & \sin{\beta_i} \\
--\cos{\beta_i} & \sin{\beta_i}
+-\sin{\beta_i} & \cos{\beta_i}
 \end{bmatrix}
 \begin{bmatrix}
 -y_i & 1 & 0 \\
@@ -274,6 +274,11 @@ V_b \\
  \ell + w & 1 & -1 \\ 
 -\ell - w & 1 & 1
 \end{bmatrix}
+\begin{bmatrix}
+w_{bz} \\
+v_{bx} \\
+v_{by}
+\end{bmatrix}
 \end{aligned}
 $$
 
@@ -318,13 +323,13 @@ $$
 $$
 \begin{aligned}
 V_b & = (w_{bz}, v_{bx}, v_{by}) \\
-w_b & = 0, \Delta{q_b} = 
+w_{bz} & = 0, \Delta{q_b} = 
 \begin{bmatrix}
 0 \\
 v_{bx}\Delta{t} \\
 v_{by}\Delta{t}
 \end{bmatrix} \\
-w_b & \not ={0}, \Delta{q_b} = 
+w_{bz} & \not ={0}, \Delta{q_b} = 
 \begin{bmatrix}
 w_{bz}\Delta{t} \\
 \frac{v_{bx}\sin{w_{bz}\Delta{t}} + v_{by}(\cos{w_{bz}\Delta{t}} - 1)}{w_{bz}\Delta{t}} \\
