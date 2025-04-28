@@ -80,4 +80,9 @@ A very naive joint protection is implemented in `test_joint_limits` in `main.py`
     - `best`: run the task with a tuned controller
     - `overshoot`: run the task with a poorly tuned controller
     - `newtask`: run the task with a tuned controller, and turn on/off the protection to see its effect
+ 
+## Others
+
+* `article.md`: this file summarizes what I've learned from this project
+    - github can't render some equations properly, so you can view it in vs code with `Markdown All in One` plugin or check it [here](https://www.techchickensoup.com/chef-collection/mobile-manipulation-intro1/)
 
