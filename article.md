@@ -7,6 +7,10 @@
     - [youBot手臂關節角度更新](#youbot手臂關節角度更新)
     - [實作](#實作)
   - [軌跡規劃](#軌跡規劃)
+    - [軌跡定義](#軌跡定義)
+    - [Screw trajectory](#screw-trajectory)
+    - [Cartesian trajectory](#cartesian-trajectory)
+    - [方塊夾取模擬](#方塊夾取模擬)
   - [控制器](#控制器)
   - [整合](#整合)
   - [結語](#結語)
@@ -475,6 +479,30 @@ def next_state(self, curr_config: list[float], speed: list[float], dt: float, ma
 上述便是程式實作的部分，細節可以參考這份[!TODO!](!TODO!)
 
 ## 軌跡規劃
+
+讓我們接著了解軌跡規劃吧，想看上一節**姿態預估**的讀者可以參考這個連結(TODO).
+
+軌跡規劃用於指定機器人的任務，例如: 讓末端執行器跟蹤某一個已知的移動問題。對於專題內的youBot而言，它的任務是夾起方塊，並在指定的位置放下方塊。在這一節中，我們會簡介:
+* 軌跡的定義
+* Screw trajectory
+* Cartesian trajectory
+* 方塊夾取模擬，使用*Cartesian trajectory*
+
+那就讓我們開始吧～
+
+### 軌跡定義
+
+todo
+
+### Screw trajectory
+
+todo
+
+### Cartesian trajectory
+
+todo
+
+### 方塊夾取模擬
 
 todo 
 
