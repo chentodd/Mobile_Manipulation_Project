@@ -476,7 +476,7 @@ def next_state(self, curr_config: list[float], speed: list[float], dt: float, ma
   return ...
 ```
 
-上述便是程式實作的部分，細節可以參考這份[!TODO!](!TODO!)
+上述便是程式實作的部分，細節可以參考這份[檔案](https://github.com/chentodd/Mobile_Manipulation_Project/blob/main/code/odometry.py)
 
 ## 軌跡規劃
 
