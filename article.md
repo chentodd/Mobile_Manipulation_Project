@@ -8,6 +8,7 @@
     - [實作](#實作)
   - [軌跡規劃](#軌跡規劃)
     - [軌跡定義](#軌跡定義)
+      - [三次多項式](#三次多項式)
     - [Screw trajectory](#screw-trajectory)
     - [Cartesian trajectory](#cartesian-trajectory)
     - [方塊夾取模擬](#方塊夾取模擬)
@@ -492,7 +493,49 @@ def next_state(self, curr_config: list[float], speed: list[float], dt: float, ma
 
 ### 軌跡定義
 
-todo
+我們將路徑(path)定義為$\theta(s)$，其中$s$是scalar parameter並且在路徑起始處為0、末端處為1，$\theta(s)$會對應機器人構型空間$\Theta$中的一點: $\theta:[0, 1]\to\Theta$。
+$s$可以隨著$t$變化，因此軌跡可以進一步定義成: $\theta(s(t))$，其中$t$是time scaling，表示: $s:[0, T]\to[0, 1]$。
+
+簡介完軌跡定義之外，讓我們來看一個簡單的三次$s(t)$多項式吧:
+
+#### 三次多項式
+
+$s(t)$可以表示成: $s(t) = a_0 + a_1t + a_2t^2 + a_3t^3$。可以透過施加約束去求解係數: 
+1. $s(0) = \dot{s}(0) = 0$
+2. $s(T) = 1$, $\dot{s}(T) = 0$
+
+利用上述的約束，可以解出: 
+
+$$
+\begin{aligned}
+a_0 = 0, a_1 = 0, a_2 = \frac{3}{T^2}, a_3 = -\frac{2}{T^3}
+\end{aligned}
+$$
+
+$s(t)$, $\dot{s}(t)$, $\ddot{s}(t)$的示意圖如下:
+
+![s(t) graph](./resources/modernrobotics-fig9.3.png){ width=600px }
+
+*MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL” by Kevin M. Lynch and Frank C. Park.*
+
+考慮直性路徑的話，$\theta(s(t))$以及其路徑速度、加速度可以寫成:
+
+$$
+\begin{aligned}
+\theta(s(t)) & = \theta_{start} + s(t)(\theta_{end} - \theta_{start}) \\
+\theta(s(t)) & = \theta_{start} + (\frac{3t^2}{T^2} - \frac{2t^3}{T^3})(\theta_{end} - \theta_{start}) \\
+\dot{\theta}(s(t)) & = (\frac{6t}{T^2} - \frac{6t^2}{T^3})(\theta_{end} - \theta_{start}) \\
+\ddot{\theta}(s(t)) & = (\frac{6t}{T^2} - \frac{12t}{T^3})(\theta_{end} - \theta_{start}) \\
+\end{aligned}
+$$
+
+不過從上圖可以發現三次多項式會造成$\ddot{s}(0)$, $\ddot{s}(T)$產生加速度的不連續跳動，以下是可能的解決方案:
+1. 施加$\ddot{s}(0)=\ddot{s}(T)=0$的約束，使用五次多項式去表達$s(t)$
+2. 應用加加速度(Jerk)，使用S-curve去表達$s(t)$
+
+為了避免篇幅過長，這裡就不簡介五次多項式以及S-curve了，下面列出相關資料供有興趣的讀者參考
+1. 五次多項式介紹: [MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL](https://hades.mech.northwestern.edu/images/2/2e/MR-largefont-v2.pdf), Chapter 9
+2. S-curve介紹: [Trajectory Planning for Automatic Machines and Robots](https://link.springer.com/book/10.1007/978-3-540-85629-0), Chapter 3
 
 ### Screw trajectory
 
