@@ -9,9 +9,8 @@
   - [軌跡規劃](#軌跡規劃)
     - [軌跡定義](#軌跡定義)
       - [三次多項式](#三次多項式)
-    - [Screw trajectory](#screw-trajectory)
-    - [Cartesian trajectory](#cartesian-trajectory)
-    - [方塊夾取模擬](#方塊夾取模擬)
+    - [構型空間的路徑](#構型空間的路徑)
+    - [軌跡模擬](#軌跡模擬)
   - [控制器](#控制器)
   - [整合](#整合)
   - [結語](#結語)
@@ -518,7 +517,7 @@ $s(t)$, $\dot{s}(t)$, $\ddot{s}(t)$的示意圖如下:
 
 *MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL” by Kevin M. Lynch and Frank C. Park.*
 
-考慮直性路徑的話，$\theta(s(t))$以及其路徑速度、加速度可以寫成:
+考慮直線路徑的話，$\theta(s(t))$以及其路徑速度、加速度可以寫成:
 
 $$
 \begin{aligned}
@@ -537,17 +536,164 @@ $$
 1. 五次多項式介紹: [MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL](https://hades.mech.northwestern.edu/images/2/2e/MR-largefont-v2.pdf), Chapter 9
 2. S-curve介紹: [Trajectory Planning for Automatic Machines and Robots](https://link.springer.com/book/10.1007/978-3-540-85629-0), Chapter 3
 
-### Screw trajectory
+### 構型空間的路徑
 
-todo
+如果想將末端執行器的起始構型$X_{start}$移動至結束構型$X_{end}$，我們會怎麼做呢？ 一個想法是利用上述提到的直線路徑，將路徑表示成:
 
-### Cartesian trajectory
+$$
+\begin{aligned}
+X(s) = X_{start} + s(X_{end} - X_{start}), s\in[0, 1]
+\end{aligned}
+$$
 
-todo
+由於構型包含平移以及旋轉，這造成$X_{end} - X_{start}$的計算問題，那麼我們要怎麼定義路經將$X_{start}$移動至$X_{end}$呢？
 
-### 方塊夾取模擬
+一個作法是定義中$X_{start}$和$X_{end}$之間的screw axis，讓$X_{start}$以screw motion的方式移動至$X_{end}$:
 
-todo 
+假設起始構型$X_{start}$以及結束構型$X_{end}$可以在${s}$座標系中被定義，那麼我們可以利用下標消去法在起始座標系中表示結束構型:
+
+$$
+\begin{aligned}
+X_{start, end} = X_{start, s}X_{s, end} = X^{-1}_{s, start}X_{s, end}
+\end{aligned}
+$$
+
+從$X_{start, end}$分解出screw axis: $log(X^{-1}_{s, start}X_{s, end})$，$X_{start}$沿著screw axis會在單位時間內到達$X_{end}$。如此一來，構型的路徑就可以寫成 (screw axis的公式可以參考[MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL](https://hades.mech.northwestern.edu/images/2/2e/MR-largefont-v2.pdf), Chapter 3.3.3):
+
+$$
+\begin{aligned}
+X(s) = X_{start}exp(log(X^{-1}_{s, start}X_{s, end})s)
+\end{aligned}
+$$
+
+在這個運動中，末端執行器會沿著screw axis做"直線"運動，可是在直角座標空間會沿著螺旋運動。如果要得到直角座標空間的直線運動，可以將旋轉運與平移運動從構型中分離:
+
+$$
+\begin{aligned}
+X & = (R, p) \\
+p(s) & = p_{start} + s(p_{end} - p_{start}) \\
+R(s) & = R_{start}exp(log(R^T_{start}R_{end})s)
+\end{aligned}
+$$
+
+下圖展示螺旋運動以及"分離旋轉/平移"運動的效果:
+
+![screw motion and decoupled motion](./resources/modernrobotics-fig9.2.png){ width=600px }
+
+*MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL” by Kevin M. Lynch and Frank C. Park.*
+
+[modern-robotics](https://pypi.org/project/modern-robotics/) library實做了上述的運動，有興趣的讀者可以參考:
+1. 螺旋運動: `ScrewTrajactory`
+2. "分離旋轉/平移"運動: `CartesianTrajactory`
+
+### 軌跡模擬
+
+我們利用CoppeliaSim展示library的`ScrewTrajactory`以及`CartesianTrajactory`的效果並簡介如何建立夾取方塊的路徑。
+為了方便起見，這裡會直接利用筆者做好的程式碼(詳細程式碼可見[這裡](https://github.com/chentodd/Mobile_Manipulation_Project/blob/main/code/trajectory.py))。
+
+為了展示`ScrewTrajactory`以及`CartesianTrajactory`，我們會利用[trajectory.py](https://github.com/chentodd/Mobile_Manipulation_Project/blob/main/code/trajectory.py)，`trajectory.py`
+會依照使用者指定的構型以`ScrewTrajactory`或`CartesianTrajactory`進行計算。在介紹`trajectory.py`之前，先讓我們了解方塊以及一些基本的模擬環境設定:
+
+方塊構型:
+  * 起始構型$(\phi, x, y, z) = (0\degree, 1, 0, 0.025)$
+  * 結束構型$(\phi, x, y, z) = (-90\degree, 0, -1, 0.025)$
+
+模擬環境, 使用CoppeliaSim以及課程提供的scenes，詳細架設可以參考這個[連結](https://hades.mech.northwestern.edu/index.php/Mobile_Manipulation_Capstone)，在一節中我們會
+用到課程提供的`Scene8_gripper_csv.ttt`
+
+模擬輸入: CSV檔案，檔案紀錄下列資訊:
+```
+r11, r12, r13, r21, r22, r23, r31, r32, r33, px, py, pz, gripper state
+```
+前12項是構型矩陣$T$:
+$$
+\begin{aligned}
+\begin{bmatrix}
+r11 & r12 & r13 & px \\
+r21 & r22 & r23 & py \\
+r31 & r32 & r33 & pz \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+\end{aligned}
+$$
+
+`gripper_state`表示夾爪的狀態:
+* 0: 夾爪打開
+* 1: 夾爪關閉
+
+接著，讓我們來了解`trajectory.py`是如何產生軌跡的吧，`trajectory.py`的主要函式是`generate_trajectory`，這個函式會依照使用者設定的構型做計算:
+
+1. $T_{s, e, init}$: 夾爪在$s$座標系的初始構型
+2. $T_{s, c, init}$: 方塊在$s$座標系的初始構型
+3. $T_{s, c, final}$: 方塊在$s$座標系的結束構型
+4. $T_{c, e, grasp}$: 在夾取方塊時，夾爪相對方塊座標系的構型
+5. $T_{c, e, standoff}$: 在夾取方塊前，夾爪相對方塊座標系的構型，表示夾爪相對方塊的一個偏移
+
+有了上面的輸入，`generate_trajectory`便會利用`ScrewTrajactory`或是`CartesianTrajactory`去拼接構型之間的軌跡，拼接的方式簡介如下:
+
+1. 將$T_{s, e, init}$移動至起始方塊的"standoff"位置
+2. 從起始方塊的"standoff"位置移動至起始方塊的夾取位置
+3. 關閉夾爪
+4. 從起始方塊的夾取位置回到起始方塊的"standoff"位置
+5. 從起始方塊的"standoff"位置移動至結束方塊的"standoff"位置
+6. 從結束方塊的"standoff"位置移動至結束方塊的夾取位置
+7. 打開夾爪
+8. 從結束方塊的夾取位置回到結束方塊的"standoff"位置
+
+這裡，我們會利用第一段軌跡來展示`ScrewTrajactory`以及`CartesianTrajactory`的效果:
+
+第一段軌跡是將$T_{s, e, init}$移動至起始方塊的"standoff"位置，為了更好的觀察的軌跡，我們將$T_{s, e, init}$設定成:
+
+$$
+\begin{aligned}
+T_{s, e, init} = \begin{bmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 1 \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+\end{aligned}
+$$
+
+並把$T_{c, e, standoff}$設定成:
+
+$$
+\begin{aligned}
+T_{c, e, standoff} = \begin{bmatrix}
+0 & 0 & 1 & 0 \\
+0 & 1 & 0 & 0 \\
+-1 & 0 & 0 & 0.25 \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+\end{aligned}
+$$
+
+接著，修改`generate_trajectory`函式，只留下"Segment 1"，註解其餘部份:
+
+```python
+T_se_standoff_pick = T_sc_init @ T_ce_standoff
+
+# Tf: 軌跡運行的時間
+# N: 要將軌跡細分成多少段
+# method: s(t), 指定t的產生方式, library支援3次, 5次多項式
+curr_trajectories = mr.ScrewTrajectory(T_se_init, T_se_standoff_pick, self.Tf, self.N * 8, self.method)
+self.__flatten(all_trajectories, curr_trajectories, GripperState.OPEN)
+```
+
+利用下標消去法，我們可以得到$T_{s, e, standoff}$，這裡我們使用`ScrewTrajectory`去產生軌跡。
+
+分別使用`ScrewTrajectory`以及`CartesianTrajactory`之後，我們得到下面的結果。可以發現`ScrewTrajectory`會讓夾爪做螺旋運動，而`CartesianTrajactory`則是做直線運動
+
+|Screw trajectory|Cartesian trajectory|
+|---|---|
+|![screw-trajectory](./resources/screw_trajectory.gif)|![cartesian-trajectory](./resources/cartesian_trajectory.gif)|
+
+最後，我們重新啟用`generate_trajectory`的其他部份，模擬夾取方塊的完整軌跡，可以得到下面的結果。
+(Note: 影片中模擬的速度是2倍，且利用的是`trajectory.py`內的預設設定。另外因模擬環境被沒有設定物體之間的接觸，因此會看到夾爪"穿透"方塊)
+
+![gripper-trajectory](./resources/gripper_trajectory.gif)
+
+至此，軌跡的介紹就告一段落了，希望這些介紹能帶來一點幫助，如果有其他問題的話，歡迎隨時留言提問。
 
 ## 控制器
 
