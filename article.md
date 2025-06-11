@@ -12,7 +12,10 @@
     - [構型空間的路徑](#構型空間的路徑)
     - [軌跡模擬](#軌跡模擬)
   - [控制器](#控制器)
+    - [主函式](#主函式)
   - [整合](#整合)
+    - [主函式](#主函式-1)
+    - [模擬結果](#模擬結果)
   - [結語](#結語)
   - [參考資料](#參考資料)
 
@@ -697,15 +700,396 @@ self.__flatten(all_trajectories, curr_trajectories, GripperState.OPEN)
 
 ## 控制器
 
-todo 
+前一篇文章中，我們簡介了軌跡並且規劃了夾取方塊的路徑。在這一章中，我們簡介控制器如何將軌跡轉換成車輪速度$u$以及機械手臂關節速度$\dot{\theta}$，計算出來的速度會輸入
+至里程計內去預估姿態，而模擬軟體就可以利用這些姿態去驅動youBot模型，接下來就讓我們開始吧～
+
+從軌跡規劃，我們可以得到$T_{s,e}$:
+$$
+\begin{aligned}
+X(q, \theta) = T_{se}(q, \theta) = T_{sb}(q)T_{b0}T_{0e}(\theta)
+\end{aligned}
+$$
+
+* ${s}$: 固定的空間座標系
+* ${b}$: 底盤座標系
+* ${0}$: 機械手臂底座座標系
+* ${e}$: 末端執行器座標系
+* $\theta$: 機械手臂的關節位置
+* $q$: 底座的平面構型$(\phi, x, y)$
+
+為了排除速度轉換對於$q$的依賴，我們會在${e}$內建立末端執行器速度與車輪/關節速度之間的關係:
+
+$$
+\begin{aligned}
+V_e = J_e(\theta) 
+\begin{bmatrix}
+u \\
+\dot{\theta}
+\end{bmatrix}
+
+= [J_{base}(\theta) J_{arm}(\theta)]
+
+\begin{bmatrix}
+u \\
+\dot{\theta}
+\end{bmatrix}
+
+\end{aligned}
+$$
+
+公式中的$J_{base}(\theta)$與$J_{arm}(\theta)$是Jacobian matrix:
+
+* $J_{base}(\theta)u$: 車輪速度$u$對末端執行器速度的貢獻
+* $J_{arm}(\theta)\dot{\theta}$: 關節速度$dot{\theta}$對末端執行器速度的貢獻
+
+$J_{arm}(\theta)$在$e$內的推導，可以參考[MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL](https://hades.mech.northwestern.edu/images/2/2e/MR-largefont-v2.pdf)
+的Chapter 5.1.2 (筆者偷懶沒整理這一塊，有興趣的讀者可以參考這一節)。
+
+在里程計的文章中，我們知道youBout底座的速度與車輪速度可以表示成:
+
+$$
+\begin{aligned}
+V_b & = \frac{r}{4}
+\begin{bmatrix}
+\frac{-1}{\ell+w} & \frac{1}{\ell+w} & \frac{1}{\ell+w} & \frac{-1}{\ell+w} \\ 
+1 & 1 & 1 & 1 \\ 
+-1 & 1 & -1 & 1
+\end{bmatrix} 
+u
+= Fu
+\end{aligned}
+$$
+
+上述公式對應平面的速度旋量$V_{b}$，我們將公式改造，在$F$的上方增加兩列零向量以及$F$的下方增加一列零向量，讓它可以對應六維的速度旋量$V_{b6}$:
+
+$$
+\begin{aligned}
+F_6
+\begin{bmatrix}
+0_m \\
+0_m \\
+F \\
+0_m
+\end{bmatrix} 
+\end{aligned}
+$$
+
+底盤的速度旋量便可以在末端執行器座標系中表示:
+
+公式中的$[Ad_{T}]$是adjoint representation，其用途是轉換速度旋量，詳細介紹可以參考
+[MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL](https://hades.mech.northwestern.edu/images/2/2e/MR-largefont-v2.pdf)的Chapter 3, 定義3.20
+
+$$
+\begin{aligned}
+[Ad_{T_{eb}(\theta)}]V_{b6} = 
+[Ad_{T_{0e}^{-1}(\theta)T_{b0}^{-1}}]V_{b6} = 
+[Ad_{T_{0e}^{-1}(\theta)T_{b0}^{-1}}]F_6u =
+J_{base}(\theta)u
+\end{aligned}
+$$
+
+這樣就得到$J_{base}(\theta)u$:
+
+$$
+\begin{aligned}
+J_{base}(\theta)u =
+[Ad_{T_{0e}^{-1}(\theta)T_{b0}^{-1}}]F_6
+\end{aligned}
+$$
+
+得到完整的$J_e$之後，我們可以用任務空間的前饋加反饋控制讓末端執行器跟隨期望的軌跡$X_{d}(t)$:
+
+Note: 
+- 下面公式內的$d$表示期望的數值
+- $log$是對matrix做logrithm，其用意是為了找出旋轉軸的矩陣形式，可以參考
+[MODERN ROBOTICS MECHANICS, PLANNING, AND CONTROL](https://hades.mech.northwestern.edu/images/2/2e/MR-largefont-v2.pdf)的Chapter 3.3
+
+$$
+\begin{aligned}
+
+V(t) & = [Ad_{T_{se}^{-1}T_{se,d}}]V_d(t) + K_pX_{err}(t) + K_i\int_{0}^{t}X_{err}(t)dt
+
+\end{aligned}
+$$
+
+$V_d(t)$是控制器的前饋輸入，利用軌跡規劃的結果，我們可以將$V_d(t)$表示成:
+
+$$
+\begin{aligned}
+
+[V_d(t)] & = \frac{1}{\Delta{t}} log(T_{se,d}^{-1}T_{se,d,next})
+
+\end{aligned}
+$$
+
+而$X_{err}$是構型的誤差，我們可以利用旋轉軸的方式定義誤差:
+
+$$
+\begin{aligned}
+
+[X_{err}(t)] & = log(T_{se}^{-1}T_{se,d})
+
+\end{aligned}
+$$
+
+得到$V(t)$之後，可以利用$J_e$做pseudo inverse去得到底座、機械手臂的關節速度:
+
+$$
+\begin{aligned}
+\begin{bmatrix}
+u \\
+\dot{\theta} \\
+\end{bmatrix} 
+
+= J^{\dag}_e(\theta)V
+
+\end{aligned}
+$$
+
+得到的控制輸入可以傳至里程計去計算預估姿態，這個預估姿態與理想的姿態(由軌跡規劃而來)可以輸入至控制器再次產生新的控制輸入。在這個過程中，我們會去紀錄底座位形、關節角度讓模擬軟體進行模擬。
+
+以下摘錄控制器實作中比較重要的部份，詳細的程式碼可以參考這個[連結](https://github.com/chentodd/Mobile_Manipulation_Project/blob/main/code/controller.py):
+
+### 主函式
+
+```python
+def feedback_control(self, 
+                     robot_config: list[float],
+                     F: np.array,
+                     T_se: np.array,
+                     T_se_d: np.array,
+                     T_se_d_next: np.array,
+                     Kp: np.array,
+                     Ki: np.array,
+                     dt: float,
+                     collision_joints: list[int] = None) -> tuple[list[float], np.array]:
+    """
+    ## Description
+
+    Calculate desired twist to control mobile base and robot arm
+
+    ## Input
+
+    1. The configuration of robot arm which is obtained from odometry, robot_config
+    2. The pseudo inverse of H(0) of mobile base, F
+    3. The current actual end-effector configuration X (or T_se)
+    4. The current end_effector reference configuration X_d (or T_se_d)
+    5. The end-effector reference configuration at the next timestep in the reference trajectory, X_d_next (or
+       T_se_d_next) at `dt` later
+    6. The PI gain matrices K_p and K_i
+    7. The timestep `dt` between reference trajectory configurations
+    8. The configuration of the robot, calculated by `Odometry`
+
+    ## Output
+
+    The control output for mobile base and robot arm, and the error of end-effector
+    
+    """
+```
+
+依$T_{se,d}$和$T_{se,d,next}$計算前饋輸入$V_d$
+
+```python
+# Calculate `Vd` which is feedforward twist
+Vd = (1 / dt) * mr.MatrixLog6(mr.TransInv(T_se_d) @ T_se_d_next)
+
+Vd = mr.se3ToVec(Vd)
+```
+
+利用旋轉軸的方式計算當前構型$T_{se}$與期望構型$T_{se,d}$之間的誤差
+
+```python
+# Calculate error between end-effector actual configuration and reference configuration
+V_e_err = mr.MatrixLog6(mr.TransInv(T_se) @ T_se_d)
+V_e_err = mr.se3ToVec(V_e_err)
+
+```
+
+利用上面得到的前饋/反饋公式去計算末端執行器所需的速度$V(t)$
+
+```python
+# Apply equation (13.37) to calculate control output twist
+Ad_T_ed = mr.Adjoint(mr.TransInv(T_se) @ T_se_d)
+Vd_e = Ad_T_ed @ Vd
+
+self.integral_err += V_e_err * dt
+V = Vd_e + Kp @ V_e_err + Ki @ self.integral_err
+```
+
+利用$J_e$得到底盤速度以及機械手臂關節速度
+- `JacobianBody`: 考慮末端執行器座標系時的Jacobian matrix
+- `FKinBody`: 機械手臂的正向運動學
+
+```python
+# Calculate jacobian matrix [J_base, J_arm]. Also, if `collision_joint` is given, the corresponding column of
+# offending joints will be set to 0
+J_arm = mr.JacobianBody(self.B_list, joint_angles)
+
+T_0e = mr.FKinBody(self.M_0e, self.B_list, joint_angles)
+T_b0 = self.T_b0
+Ad_T_eb = mr.Adjoint(mr.TransInv(T_0e) @ mr.TransInv(T_b0))
+
+F6 = np.array([
+    np.zeros((F.shape[1],)),
+    np.zeros((F.shape[1],)),
+    F[0],
+    F[1],
+    F[2],
+    np.zeros((F.shape[1],)),
+])
+J_base = Ad_T_eb @ F6
+
+Je = np.concatenate((J_base, J_arm), axis=1)
+Je_inv = np.linalg.pinv(Je)
+
+# Calculate final twist command
+command = Je_inv @ V
+```
 
 ## 整合
 
-todo
+這節會簡介里程計、軌跡規劃、控制器是如何整合的，並展示最後的模擬結果。
+(詳細的程式可以參考這個[連結](https://github.com/chentodd/Mobile_Manipulation_Project/blob/main/code/main.py))
+
+### 主函式
+
+```python
+def full_program(robot_config: list[float],
+                 T_sc_init: np.array,
+                 T_sc_final: np.array,
+                 T_se_init: np.array,
+                 Kp: np.array,
+                 Ki: np.array,
+                 dt: float,
+                 speed_max: float,
+                 full_trajectory_filename: str,
+                 end_effector_error_filename: str) -> None:
+    """
+    ## Description
+
+    A full program that generate trajectory for simulation
+
+    ## Input
+
+    1. The actual configuration of robot that contains 13 vectors, robot_config
+    2. The initial resting configuration of the cube object, T_sc_init
+    3. The final resting configuration of the cube object, T_sc_final
+    4. The initial configuration of the reference trajectory for the end-effector, T_se_init
+    5. The proportional gains for feedback controller, Kp
+    6. The integral gains for feedback controller, Ki
+    7. The time interval (this should be kept as 0.01, otherwise the function will raise exception), dt
+    8. The maximum speed when calculation odometry, speed_max
+    9. The CSV filename for trajectory, full_trajectory_filename
+    10. The CSV filename for end-effector errors, end_effector_error_filename
+
+    ## Output
+
+    1. A CSV file that saves to `full_trajectory_filename`, this file contains the trajectory for simulation
+    2. A CSV file that saves to `end_effector_error_filename`, this file contains the error of end-effector from `controller`
+    """
+```
+
+首先，程式會設定夾爪與方塊之間的構型
+
+```python
+angle_grasp = 3 * math.pi / 4
+T_ce_grasp = np.array([
+   [math.cos(angle_grasp),  0, math.sin(angle_grasp), 0],
+   [0,                      1, 0,                     0],
+   [-math.sin(angle_grasp), 0, math.cos(angle_grasp), 0],
+   [0,                      0, 0,                     1]
+])
+
+T_ce_standoff = np.copy(T_ce_grasp)
+T_ce_standoff[2, 3] = 0.2
+```
+
+執行軌跡規劃
+
+```python
+curr_trajs = traj_generator.generate_trajectory(T_se_init,
+                                               T_sc_init,
+                                               T_sc_final,
+                                               T_ce_grasp,
+                                               T_ce_standoff)
+```
+
+使用一個迴圈去讀取軌跡規劃的結果，並用控制器、里程計去更新youBot的姿態
+
+```python
+for i in range(N - 1):
+  # Unpacke joint angles
+  base_config = robot_config[0:3]
+  joint_angles = robot_config[3:8]
+
+  # Generate base transformation from trajectory
+  phi = base_config[0]
+  base_x = base_config[1]
+  base_y = base_config[2]
+
+  T_sb = np.array([
+      [math.cos(phi), -math.sin(phi), 0, base_x],
+      [math.sin(phi),  math.cos(phi), 0, base_y],
+      [0,              0,             1, 0.0963],
+      [0,              0,             0, 1]
+  ])
+
+  # Get end-effector configuration relative to space frame
+  T_0e = mr.FKinBody(M_0e, B_list, joint_angles)
+  T_be = T_b0 @ T_0e
+  T_se = T_sb @ T_be
+
+  # Run controller
+  curr_output, curr_end_effector_err = ctrler.feedback_control(robot_config,
+                                                               F,
+                                                               T_se,
+                                                               T_se_d,
+                                                               T_se_d_next,
+                                                               Kp,
+                                                               Ki,
+                                                               dt,
+                                                               collision_joints)
+
+  # Collect control output and run odometry
+  u = curr_output[:4]
+  theta_dot = curr_output[4:]
+  speed = theta_dot + u
+
+  robot_config = odom.next_state(robot_config, speed, dt, speed_max)
+
+  # Store current result
+  full_trajs.append(np.concatenate((robot_config, curr_trajs[i][12]), axis=None).tolist())
+  end_effector_errs.append(curr_end_effector_err.tolist())
+```
+
+最後只要將`full_trajs`輸出成CSV檔案，就可以利用CoppeliaSim進行模擬。
+
+### 模擬結果
+
+模擬結果如下 (Note: 以下影片速度都是2倍速):
+
+![all](./resources/all.gif)
+
+不過這個專題仍有些問題需要處理。在youBot的模擬環境中，機械手臂之間並沒有設定碰撞關係，因此在模擬不同方塊位置時，
+可能會看到手臂的連桿發生碰撞:
+
+![new_task_no_protection](./resources/new_task_no_protection.gif)
+
+筆者對這個問題的解決方法是參考專題描述中的建議去限制關節速度:
+1. 檢查youBot手臂的關節角度是不是超過容許範圍 
+([code](https://github.com/chentodd/Mobile_Manipulation_Project/blob/f4e731a70214cf6a94348c3e5b02828769c31687/code/main.py#L167))
+1. 蒐集超過容許範圍的關節，在`controller`內將jacobian對應的column設定成0
+([code](https://github.com/chentodd/Mobile_Manipulation_Project/blob/f4e731a70214cf6a94348c3e5b02828769c31687/code/controller.py#L102))
+
+(Note: 在`full_program`內將`collision_joints`清空可以關閉這個方法，預設是將方法關閉)
+
+開啟這個方法之後，再做一次模擬可以得到:
+
+![new_task_protection](./resources/new_task_protection.gif)
 
 ## 結語
 
-todo
+這個系列至此告一段落了，希望介紹的內容能帶來一些幫助，如果過程中有發現任何錯誤或是建議都歡迎留言，我們下次有機會再見吧。
 
 ## 參考資料
 
