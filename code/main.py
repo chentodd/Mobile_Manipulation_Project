@@ -185,7 +185,7 @@ def full_program(robot_config: list[float],
 
         robot_config = odom.next_state(robot_config, speed, dt, speed_max)
 
-        # Stor current result
+        # Store current result
         full_trajs.append(np.concatenate((robot_config, curr_trajs[i][12]), axis=None).tolist())
         end_effector_errs.append(curr_end_effector_err.tolist())
 
