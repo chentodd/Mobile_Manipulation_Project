@@ -483,7 +483,7 @@ def next_state(self, curr_config: list[float], speed: list[float], dt: float, ma
 
 ## 軌跡規劃
 
-讓我們接著了解軌跡規劃吧，想看上一節**姿態預估**的讀者可以參考這個連結(TODO).
+讓我們接著了解軌跡規劃吧，想看上一節**姿態預估**的讀者可以參考這個[連結](https://www.techchickensoup.com/chef-collection/mobile-manipulation-intro1/).
 
 軌跡規劃用於指定機器人的任務，例如: 讓末端執行器跟蹤某一個已知的移動問題。對於專題內的youBot而言，它的任務是夾起方塊，並在指定的位置放下方塊。在這一節中，我們會簡介:
 * 軌跡的定義
