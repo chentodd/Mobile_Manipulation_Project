@@ -485,7 +485,7 @@ def next_state(self, curr_config: list[float], speed: list[float], dt: float, ma
 
 讓我們接著了解軌跡規劃吧，想看上一節**姿態預估**的讀者可以參考這個連結(TODO).
 
-軌跡規劃用於指定機器人的任務，例如: 讓末端執行器跟蹤某一個已知的移動問題。對於專題內的youBot而言，它的任務是夾起方塊，並在指定的位置放下方塊。在這一節中，我們會簡介:
+軌跡規劃用於指定機器人的任務，例如: 讓末端執行器跟蹤某一個已知的移動物體。對於專題內的youBot而言，它的任務是夾起方塊，並在指定的位置放下方塊。在這一節中，我們會簡介:
 * 軌跡的定義
 * Screw trajectory
 * Cartesian trajectory
@@ -587,7 +587,7 @@ $$
 
 [modern-robotics](https://pypi.org/project/modern-robotics/) library實做了上述的運動，有興趣的讀者可以參考:
 1. 螺旋運動: `ScrewTrajactory`
-2. "分離旋轉/平移"運動: `CartesianTrajactory`
+2. 分離旋轉/平移運動: `CartesianTrajactory`
 
 ### 軌跡模擬
 
