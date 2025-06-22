@@ -483,13 +483,11 @@ def next_state(self, curr_config: list[float], speed: list[float], dt: float, ma
 
 ## 軌跡規劃
 
-讓我們接著了解軌跡規劃吧，想看上一節**姿態預估**的讀者可以參考這個連結(TODO).
+讓我們接著了解軌跡規劃吧，想看上一節**姿態預估**的讀者可以參考這個[連結](https://www.techchickensoup.com/chef-collection/mobile-manipulation-intro1/).
 
 軌跡規劃用於指定機器人的任務，例如: 讓末端執行器跟蹤某一個已知的移動物體。對於專題內的youBot而言，它的任務是夾起方塊，並在指定的位置放下方塊。在這一節中，我們會簡介:
-* 軌跡的定義
-* Screw trajectory
-* Cartesian trajectory
-* 方塊夾取模擬，使用*Cartesian trajectory*
+* 軌跡定義
+* 軌跡模擬
 
 那就讓我們開始吧～
 
@@ -601,8 +599,7 @@ $$
   * 起始構型$(\phi, x, y, z) = (0\degree, 1, 0, 0.025)$
   * 結束構型$(\phi, x, y, z) = (-90\degree, 0, -1, 0.025)$
 
-模擬環境, 使用CoppeliaSim以及課程提供的scenes，詳細架設可以參考這個[連結](https://hades.mech.northwestern.edu/index.php/Mobile_Manipulation_Capstone)，在一節中我們會
-用到課程提供的`Scene8_gripper_csv.ttt`
+模擬環境, 使用CoppeliaSim以及課程提供的scenes，詳細架設可以參考這個[連結](https://hades.mech.northwestern.edu/index.php/Mobile_Manipulation_Capstone)，在一節中我們會用到課程提供的`Scene8_gripper_csv.ttt`
 
 模擬輸入: CSV檔案，檔案紀錄下列資訊:
 ```
@@ -726,14 +723,11 @@ V_e = J_e(\theta)
 u \\
 \dot{\theta}
 \end{bmatrix}
-
 = [J_{base}(\theta) J_{arm}(\theta)]
-
 \begin{bmatrix}
 u \\
 \dot{\theta}
 \end{bmatrix}
-
 \end{aligned}
 $$
 
@@ -806,9 +800,7 @@ Note:
 
 $$
 \begin{aligned}
-
 V(t) & = [Ad_{T_{se}^{-1}T_{se,d}}]V_d(t) + K_pX_{err}(t) + K_i\int_{0}^{t}X_{err}(t)dt
-
 \end{aligned}
 $$
 
@@ -816,9 +808,7 @@ $V_d(t)$是控制器的前饋輸入，利用軌跡規劃的結果，我們可以
 
 $$
 \begin{aligned}
-
 [V_d(t)] & = \frac{1}{\Delta{t}} log(T_{se,d}^{-1}T_{se,d,next})
-
 \end{aligned}
 $$
 
@@ -826,9 +816,7 @@ $$
 
 $$
 \begin{aligned}
-
 [X_{err}(t)] & = log(T_{se}^{-1}T_{se,d})
-
 \end{aligned}
 $$
 
@@ -840,9 +828,7 @@ $$
 u \\
 \dot{\theta} \\
 \end{bmatrix} 
-
 = J^{\dag}_e(\theta)V
-
 \end{aligned}
 $$
 
